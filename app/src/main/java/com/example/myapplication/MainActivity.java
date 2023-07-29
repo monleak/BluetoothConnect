@@ -10,6 +10,7 @@ import android.content.IntentFilter;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Switch;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -25,6 +26,8 @@ public class MainActivity extends AppCompatActivity {
     private BluetoothAdapter bluetoothAdapter;
     private BluetoothDevice hc05Device;
     private ConnectThread connectThread;
+
+    public static OutputStream outputStream;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,8 +57,65 @@ public class MainActivity extends AppCompatActivity {
                 startBluetoothConnection();
             }
         });
-    }
 
+        Button stopButton = findViewById(R.id.btnSTOP);
+        stopButton.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v){
+                sendDataToRemoteDevice("0");
+            }
+        });
+
+        Button straightButton = findViewById(R.id.btnSTRAIGHT);
+        straightButton.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v){
+                sendDataToRemoteDevice("5");
+            }
+        });
+        Button rightButton = findViewById(R.id.btnRIGHT);
+        rightButton.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v){
+                sendDataToRemoteDevice("2");
+            }
+        });
+        Button leftButton = findViewById(R.id.btnLEFT);
+        leftButton.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v){
+                sendDataToRemoteDevice("3");
+            }
+        });
+        Button backButton = findViewById(R.id.btnBACK);
+        backButton.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v){
+                sendDataToRemoteDevice("4");
+            }
+        });
+        Switch autoSwitch = findViewById(R.id.switchAUTO);
+        autoSwitch.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v){
+                if(autoSwitch.isActivated()){
+                    sendDataToRemoteDevice("1");
+                }else{
+                    sendDataToRemoteDevice("0");
+                }
+            }
+        });
+
+    }
+    private void sendDataToRemoteDevice(String data) {
+        if(outputStream != null){
+            try{
+                outputStream.write(data.getBytes());
+            }catch(Exception e){
+
+            }
+        }
+    }
     private void startBluetoothConnection() {
         // Tìm thiết bị HC-05 đã ghép nối trước đó (paired devices)
         Set<BluetoothDevice> pairedDevices = bluetoothAdapter.getBondedDevices();
@@ -117,15 +177,15 @@ public class MainActivity extends AppCompatActivity {
                 if (mmSocket.isConnected()) {
                     try {
                         // Lấy OutputStream từ BluetoothSocket để gửi dữ liệu
-                        OutputStream outputStream = mmSocket.getOutputStream();
+                        MainActivity.outputStream = mmSocket.getOutputStream();
 
-                        // Chuỗi dữ liệu cần gửi
-                        String dataToSend = "3";
-
-                        // Gửi dữ liệu qua OutputStream
-                        outputStream.write(dataToSend.getBytes());
-
-                        // Bạn có thể thêm các xử lý khác sau khi gửi dữ liệu thành công
+//                        // Chuỗi dữ liệu cần gửi
+//                        String dataToSend = "3";
+//
+//                        // Gửi dữ liệu qua OutputStream
+//                        outputStream.write(dataToSend.getBytes());
+//
+//                        // Bạn có thể thêm các xử lý khác sau khi gửi dữ liệu thành công
                     } catch (IOException e) {
                         e.printStackTrace();
                         runOnUiThread(new Runnable() {
