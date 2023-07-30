@@ -7,12 +7,21 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.media.AudioRecord;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.example.myapplication.audio.AudioClassificationActivity;
+
+import org.tensorflow.lite.support.audio.TensorAudio;
+import org.tensorflow.lite.task.audio.classifier.AudioClassifier;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -240,10 +249,36 @@ public class MainActivity extends AppCompatActivity {
     private BluetoothDevice hc05Device;
     private ConnectThread connectThread;
 
+    AudioClassificationActivity audioClassificationActivity = new AudioClassificationActivity();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        TextView in = findViewById(R.id.inTextView);
+        TextView out = findViewById(R.id.outTextView);
+        String modelPath = "lite-model_yamnet_classification_tflite_1.tflite";
+        AudioClassifier classifier;
+        try {
+            classifier = AudioClassifier.createFromFile(this, modelPath);
+            Log.d("TAG", "classifier : " + classifier);
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+//        TensorAudio.TensorAudioFormat format = classifier.getRequiredTensorAudioFormat();
+//        String specs = "Number of channels: " + format.getChannels() + "\n"
+//                + "Sample Rate: " + format.getSampleRate();
+//        in.setText(specs);
+//
+//        // Creating and start recording
+//        AudioRecord record = classifier.createAudioRecord();
+//        record.startRecording();
+
+        if( in == null || out == null)
+            Toast.makeText(this, "null point", Toast.LENGTH_SHORT).show();
 
         // Kiểm tra xem thiết bị có hỗ trợ Bluetooth hay không
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -268,6 +303,47 @@ public class MainActivity extends AppCompatActivity {
                 startBluetoothConnection();
             }
         });
+
+        // Đăng ký sự kiện click di chuyển
+        ImageView right = findViewById(R.id.rightButton);
+        right.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                sendDataToHC05("1");
+            }
+        });
+
+        ImageView down = findViewById(R.id.downButton);
+        down.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                sendDataToHC05("2");
+            }
+        });
+
+        ImageView left = findViewById(R.id.leftButton);
+        left.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                sendDataToHC05("3");
+            }
+        });
+
+        ImageView up = findViewById(R.id.upButton);
+        up.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                sendDataToHC05("4");
+            }
+        });
+
+        ImageView voice = findViewById(R.id.voice_btn);
+        voice.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                audioClassificationActivity.onStartRecording(v, in, out, classifier);
+            }
+        });
     }
 
     private void startBluetoothConnection() {
@@ -288,6 +364,24 @@ public class MainActivity extends AppCompatActivity {
         // Kết nối đến thiết bị HC-05
         connectThread = new ConnectThread(hc05Device);
         connectThread.start();
+    }
+
+    private void sendDataToHC05(String dataToSend) {
+        // Kiểm tra xem thiết bị HC-05 đã được kết nối chưa
+        if (connectThread == null || !connectThread.mmSocket.isConnected()) {
+            Toast.makeText(this, "Chưa kết nối đến HC-05", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Kết nối đã được thiết lập, gửi dữ liệu qua BluetoothSocket
+        try {
+            OutputStream outputStream = connectThread.mmSocket.getOutputStream();
+            outputStream.write(dataToSend.getBytes());
+            // Bạn có thể thêm các xử lý khác sau khi gửi dữ liệu thành công
+        } catch (IOException e) {
+            e.printStackTrace();
+            Toast.makeText(this, "Không thể gửi dữ liệu", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private class ConnectThread extends Thread {
