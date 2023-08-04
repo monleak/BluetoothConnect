@@ -3,14 +3,11 @@ package com.example.myapplication;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.Bundle;
+import android.speech.RecognizerIntent;
 import android.view.View;
 import android.widget.Button;
-import android.widget.Switch;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -20,13 +17,14 @@ import java.io.OutputStream;
 import java.util.Set;
 import java.util.UUID;
 
+import androidx.annotation.Nullable;
+
 public class MainActivity extends AppCompatActivity {
 
     private static final int REQUEST_ENABLE_BT = 1;
     private BluetoothAdapter bluetoothAdapter;
     private BluetoothDevice hc05Device;
     private ConnectThread connectThread;
-
     public static OutputStream outputStream;
 
     @Override
@@ -59,6 +57,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         Button stopButton = findViewById(R.id.btnSTOP);
+
         stopButton.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v){
@@ -94,19 +93,54 @@ public class MainActivity extends AppCompatActivity {
                 sendDataToRemoteDevice("4");
             }
         });
-        Switch autoSwitch = findViewById(R.id.switchAUTO);
-        autoSwitch.setOnClickListener(new View.OnClickListener(){
+
+        Button autoButton = findViewById(R.id.btnAUTO1);
+        autoButton.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v){
-                if(autoSwitch.isActivated()){
-                    sendDataToRemoteDevice("1");
-                }else{
-                    sendDataToRemoteDevice("0");
-                }
+                sendDataToRemoteDevice("1");
             }
         });
 
     }
+
+    public void speak(View view) {
+        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Start Speaking");
+        startActivityForResult(intent, 100);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if(requestCode == 100 && resultCode == RESULT_OK){
+//            String test = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS).get(0);
+//            Toast.makeText(this, data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS).get(0), Toast.LENGTH_SHORT).show();
+            switch (data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS).get(0)){
+                case "đi thẳng":
+                    sendDataToRemoteDevice("5");
+                    break;
+                case "rẽ phải":
+                    sendDataToRemoteDevice("2");
+                    break;
+                case "rẽ trái":
+                    sendDataToRemoteDevice("3");
+                    break;
+                case "đi lùi":
+                    sendDataToRemoteDevice("4");
+                    break;
+                case "dừng lại":
+                    sendDataToRemoteDevice("0");
+                    break;
+                case "tự động":
+                    sendDataToRemoteDevice("1");
+                    break;
+            }
+        }
+    }
+
     private void sendDataToRemoteDevice(String data) {
         if(outputStream != null){
             try{
